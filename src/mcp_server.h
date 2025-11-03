@@ -33,11 +33,11 @@ private:
     json createResponse(const string& id, const json& result);
     json createErrorResponse(const string& id, int code, const string& errorMessage);
 
-    void haddleInitialize(const json& id, const json& result);
+    void handleInitialize(const json& id, const json& params);
     void handleListTools(const json& id);
     void handleCallTool(const json& id, const json& params);
 
-    void sendmessage(const json& message);
+    void sendMessage(const json& message);
 
     string readMessage();
 public:

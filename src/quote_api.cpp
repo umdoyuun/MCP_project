@@ -4,10 +4,10 @@
 using namespace std;
 
 QuoteAPI::QuoteAPI() {
-    initalizeQuotes();
+    initializeQuotes();
 }
 
-void QuoteAPI::initalizeQuotes(){
+void QuoteAPI::initializeQuotes() {
     quotes_ = {
         {"시작이 반이다.", "한국 속담"},
         {"천 리 길도 한 걸음부터.", "한국 속담"},

@@ -5,16 +5,16 @@
 using namespace std;
 
 struct Quote{
-    string author;
     string text;
+    string author;
 };
 
 class QuoteAPI{
 private:
     vector<Quote> quotes_;
-    void initalizeQuotes();
-    
+    void initializeQuotes();
+
 public:
     QuoteAPI();
     ToolResult getRandomQuote(const json& arguments);
-}
+};

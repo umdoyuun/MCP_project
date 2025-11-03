@@ -42,6 +42,5 @@ include/json.hpp
 # 로그 파일
 *.log
 
-# API 키 (절대 커밋 금지!)
 *api_key*
 *.key

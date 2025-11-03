@@ -48,7 +48,7 @@ void MCPServer::handleMessage(const json& request) {
     json params = request.value("params", json::object());
 
     if(method == "initialize"){
-        haddleInitialize(id, params);
+        handleInitialize(id, params);
     } else if(method == "tools/list"){
         handleListTools(id);
     } else if(method == "tools/call"){
@@ -58,14 +58,14 @@ void MCPServer::handleMessage(const json& request) {
     }
 }
 
-void MCPServer::haddleInitialize(const json& id, const json& params) {
+void MCPServer::handleInitialize(const json& id, const json& params) {
     json result = {
         {"protocolVersion", "2.0"},
         {"serverInfo",{
             {"name", serverName_},
             {"version", "1.0.0"}
         }},
-        {"capaabilities",{
+        {"capabilities",{
             {"tools", json::object()}
         }}
     };

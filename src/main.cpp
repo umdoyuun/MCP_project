@@ -57,7 +57,7 @@ int main(){
         return 0;
     }
     catch (const std::exception& e){
-        cerr << "Fetal Error: " << e.what() << endl;
+        cerr << "Fatal Error: " << e.what() << endl;
         return 1;
     }
 }
