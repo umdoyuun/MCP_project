@@ -1,0 +1,47 @@
+# 빌드 결과물
+build/
+*.exe
+*.out
+*.app
+mcp_server
+
+# CMake 관련
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# 컴파일 결과물
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS 관련
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 다운로드된 라이브러리
+include/json.hpp
+
+# 환경 변수 파일
+.env
+
+# 로그 파일
+*.log
+
+# API 키 (절대 커밋 금지!)
+*api_key*
+*.key
