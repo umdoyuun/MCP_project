@@ -2,9 +2,8 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>
-using namespace std;
 
-MCPServer::MCPServer(const string& serverName)
+MCPServer::MCPServer(const std::string& serverName)
  : serverName_(serverName) {
 }
 
@@ -16,21 +15,21 @@ void MCPServer::registerTool(const Tool& tool, ToolHandler handler) {
 void MCPServer::run() {
     while (true) {
         try{
-            string messageStr = readMessage();
+            std::string messageStr = readMessage();
             if (messageStr.empty()) {
                 break;
             }
 
             json request = json::parse(messageStr, nullptr, false);
             if (request.is_discarded()) {
-                cerr << "Failed to parse JSON message: " << messageStr << endl;
+                std::cerr << "Failed to parse JSON message: " << messageStr << std::endl;
                 continue;
             }
             handleMessage(request);
         }
         catch (const std::exception& e) {
-            cerr << "Exception: " << e.what() << endl;
-            json error = createErrorResponse(nullptr, -32700, "Parse error");
+            std::cerr << "Exception: " << e.what() << std::endl;
+            json error = createErrorResponse(json(nullptr), -32700, "Parse error");
             sendMessage(error);
         }        
         
@@ -39,12 +38,12 @@ void MCPServer::run() {
 
 void MCPServer::handleMessage(const json& request) {
     if(!request.contains("jsonrpc") || request["jsonrpc"] != "2.0"){
-        sendMessage(createErrorResponse(request.value("id", nullptr), -32600, "Invalid Request"));
+        sendMessage(createErrorResponse(request.value("id", json(nullptr)), -32600, "Invalid Request"));
         return;
     }
 
-    string method = request.value("method", "");
-    json id = request.value("id", nullptr);
+    std::string method = request.value("method", "");
+    json id = request.value("id", json(nullptr));
     json params = request.value("params", json::object());
 
     if(method == "initialize"){
@@ -89,12 +88,17 @@ void MCPServer::handleListTools(const json& id) {
 }
 
 void MCPServer::handleCallTool(const json& id, const json& params) {
-    string toolName = params.value("name", "");
+    if (!params.contains("name") || !params["name"].is_string()) {
+        sendMessage(createErrorResponse(id, -32602, "Invalid params: 'name' is required"));
+        return;
+    }
+
+    std::string toolName = params["name"];
     json arguments = params.value("arguments", json::object());
 
     auto it = toolHandlers_.find(toolName);
     if (it == toolHandlers_.end()) {
-        sendMessage(createErrorResponse(id, -32602, "Tool not found"));
+        sendMessage(createErrorResponse(id, -32602, "Tool not found: " + toolName));
         return;
     }
 
@@ -114,11 +118,11 @@ void MCPServer::handleCallTool(const json& id, const json& params) {
         sendMessage(createResponse(id, response));
     }
     catch(const std::exception& e){
-        sendMessage(createErrorResponse(id, -32603, string("Internal error: ") + e.what()));
+        sendMessage(createErrorResponse(id, -32603, std::string("Internal error: ") + e.what()));
     }
 }
 
-json MCPServer::createResponse(const string& id, const json& result) {
+json MCPServer::createResponse(const json& id, const json& result) {
     return {
         {"jsonrpc", "2.0"},
         {"id", id},
@@ -126,7 +130,7 @@ json MCPServer::createResponse(const string& id, const json& result) {
     };
 }
 
-json MCPServer::createErrorResponse(const string& id, int code, const string& errorMessage) {
+json MCPServer::createErrorResponse(const json& id, int code, const std::string& errorMessage) {
     return {
         {"jsonrpc", "2.0"},
         {"id", id},
@@ -138,22 +142,56 @@ json MCPServer::createErrorResponse(const string& id, int code, const string& er
 }
 
 void MCPServer::sendMessage(const json& message) {
-    string messageStr = message.dump();
+    std::string messageStr = message.dump();
 
-    // Prepare header
-    stringstream header;
-    header << "Content-Length: " << messageStr.size() << "\r\n\r\n";
-
-    // Send header and message
-    cout << header.str();
-    cout << messageStr;
-    cout.flush();
+    std::cout << "Content-Length: " << messageStr.size() << "\r\n\r\n";
+    std::cout << messageStr << std::flush;
+    
+    std::cerr << "[SEND] " << messageStr.substr(0, 100) 
+         << (messageStr.size() > 100 ? "..." : "") << std::endl;
 }
 
-string MCPServer::readMessage() {
-    string line;
-    if(getline(cin, line)){
-        return line;
+std::string MCPServer::readMessage() {
+    std::string line;
+    size_t contentLength = 0;
+    
+    while (getline(std::cin, line)) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        
+        if (line.empty()) {
+            break;
+        }
+        
+        if (line.find("Content-Length:") == 0) {
+            size_t colonPos = line.find(':');
+            if (colonPos != std::string::npos) {
+                std::string lengthStr = line.substr(colonPos + 1);
+                size_t start = lengthStr.find_first_not_of(" \t");
+                if (start != std::string::npos) {
+                    lengthStr = lengthStr.substr(start);
+                }
+                contentLength = stoull(lengthStr);
+            }
+        }
     }
-    return "";
+    
+    if (contentLength == 0) {
+        return "";
+    }
+    
+    std::string content;
+    content.resize(contentLength);
+    std::cin.read(&content[0], contentLength);
+    
+    if (std::cin.gcount() != static_cast<std::streamsize>(contentLength)) {
+        std::cerr << "Failed to read full message body" << std::endl;
+        return "";
+    }
+    
+    std::cerr << "[RECV] " << content.substr(0, 100) 
+         << (content.size() > 100 ? "..." : "") << std::endl;
+    
+    return content;
 }

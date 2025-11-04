@@ -6,17 +6,16 @@
 #include <vector>
 #include "json.hpp"
 using json = nlohmann::json;
-using namespace std;
 
 struct Tool{
-    string name;
-    string description;
+    std::string name;
+    std::string description;
     json inputSchema;
 };
 
 struct ToolResult{
-    string type;
-    string text;
+    std::string type;
+    std::string text;
     bool isError;
 };
 
@@ -24,14 +23,14 @@ using ToolHandler = std::function<ToolResult(const json&)>;
 
 class MCPServer{
 private:
-    string serverName_;
-    vector<Tool> tools_;
-    map<string, ToolHandler> toolHandlers_;
+    std::string serverName_;
+    std::vector<Tool> tools_;
+    std::map<std::string, ToolHandler> toolHandlers_;
 
     void handleMessage(const json& request);
 
-    json createResponse(const string& id, const json& result);
-    json createErrorResponse(const string& id, int code, const string& errorMessage);
+    json createResponse(const json& id, const json& result);
+    json createErrorResponse(const json& id, int code, const std::string& errorMessage);
 
     void handleInitialize(const json& id, const json& params);
     void handleListTools(const json& id);
@@ -39,9 +38,9 @@ private:
 
     void sendMessage(const json& message);
 
-    string readMessage();
+    std::string readMessage();
 public:
-    MCPServer(const string& serverName);
+    MCPServer(const std::string& serverName);
 
     void registerTool(const Tool& tool, ToolHandler handler);
 
