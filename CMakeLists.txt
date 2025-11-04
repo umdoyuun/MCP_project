@@ -24,9 +24,17 @@ if(NOT nlohmann_json_FOUND)
     include_directories(${CMAKE_SOURCE_DIR}/include)
 endif()
 
-# CURL이 없으면 경고
-if(NOT CURL_FOUND)
-    message(WARNING "CURL not found. HTTP features will be limited.")
+# ✅ 수정: CURL 상태 확인 및 설정
+if(CURL_FOUND)
+    message(STATUS "✓ CURL found - HTTP features enabled")
+    set(USE_CURL_ENABLED ON)
+else()
+    message(WARNING "✗ CURL not found - Weather API will return sample data only")
+    message(STATUS "  To enable real weather data:")
+    message(STATUS "  - Install CURL library")
+    message(STATUS "  - Windows: vcpkg install curl")
+    message(STATUS "  - Linux: sudo apt-get install libcurl4-openssl-dev")
+    set(USE_CURL_ENABLED OFF)
 endif()
 
 # 소스 파일
@@ -45,11 +53,11 @@ if(nlohmann_json_FOUND)
     target_link_libraries(mcp_server PRIVATE nlohmann_json::nlohmann_json)
 endif()
 
-if(CURL_FOUND)
+# ✅ 수정: CURL 라이브러리 연결 및 매크로 정의
+if(USE_CURL_ENABLED)
     target_link_libraries(mcp_server PRIVATE CURL::libcurl)
-    # Commented out to avoid Windows header conflicts with std::byte
-    # target_compile_definitions(mcp_server PRIVATE USE_CURL)
-    message(STATUS "CURL found but disabled due to Windows header conflicts")
+    target_compile_definitions(mcp_server PRIVATE USE_CURL)
+    message(STATUS "✓ CURL library linked and USE_CURL defined")
 endif()
 
 # 헤더 파일 경로
@@ -67,8 +75,11 @@ endif()
 install(TARGETS mcp_server DESTINATION bin)
 
 # 버전 정보 출력
+message(STATUS "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 message(STATUS "Building MCP Server v${PROJECT_VERSION}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "CURL Support: ${USE_CURL_ENABLED}")
+message(STATUS "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 # 환경 변수 파일 경로 설정 (.env 파일)
 set(ENV_FILE "${CMAKE_SOURCE_DIR}/.env")
@@ -88,5 +99,5 @@ if(EXISTS ${ENV_FILE})
         endif()
     endforeach()
 else()
-    message(WARNING ".env file not found. API key might be missing.")
+    message(STATUS ".env file not found (optional)")
 endif()
