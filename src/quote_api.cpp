@@ -1,7 +1,6 @@
 #include "quote_api.h"
 #include <random>
 #include <sstream>
-using namespace std;
 
 QuoteAPI::QuoteAPI() {
     initializeQuotes();
@@ -37,14 +36,14 @@ ToolResult QuoteAPI::getRandomQuote(const json& arguments) {
         return {"text", "명언 데이터가 없습니다.", true};
     }
 
-    static random_device rd;
-    static mt19937 gen(rd());
-    uniform_int_distribution<> dis(0, quotes_.size() - 1);
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, quotes_.size() - 1);
     int randomIndex = dis(gen);
 
     const Quote& selectedQuote = quotes_[randomIndex];
 
-    ostringstream result;
+    std::ostringstream result;
     result << "💭 오늘의 명언\n\n"
            << "\"" << selectedQuote.text << "\"\n\n"
            << "- " << selectedQuote.author;

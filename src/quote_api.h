@@ -2,16 +2,15 @@
 #include <string>
 #include <vector>
 #include "mcp_server.h"
-using namespace std;
 
 struct Quote{
-    string text;
-    string author;
+    std::string text;
+    std::string author;
 };
 
 class QuoteAPI{
 private:
-    vector<Quote> quotes_;
+    std::vector<Quote> quotes_;
     void initializeQuotes();
 
 public:
