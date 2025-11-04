@@ -58,8 +58,14 @@ void MCPServer::handleMessage(const json& request) {
 }
 
 void MCPServer::handleInitialize(const json& id, const json& params) {
+    // 클라이언트가 요청한 protocolVersion 사용
+    std::string protocolVersion = "2024-11-05";  // 기본값
+    if (params.contains("protocolVersion") && params["protocolVersion"].is_string()) {
+        protocolVersion = params["protocolVersion"].get<std::string>();
+    }
+    
     json result = {
-        {"protocolVersion", "2.0"},
+        {"protocolVersion", protocolVersion},
         {"serverInfo",{
             {"name", serverName_},
             {"version", "1.0.0"}

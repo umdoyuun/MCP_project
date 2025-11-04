@@ -3,9 +3,21 @@
 #include "quote_api.h"
 #include <iostream>
 #include <cstdlib>
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 using namespace std;
 
 int main(){
+    // Windows에서 stdin/stdout을 바이너리 모드로 설정
+#ifdef _WIN32
+    _setmode(_fileno(stdin), _O_BINARY);
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
+
     try{
         MCPServer server("MyMCPServer");
 
