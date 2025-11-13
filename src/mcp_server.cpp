@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>
+#include <algorithm>
 
 MCPServer::MCPServer(const std::string& serverName)
  : serverName_(serverName) {
@@ -46,26 +47,51 @@ void MCPServer::handleMessage(const json& request) {
     json id = request.value("id", json(nullptr));
     json params = request.value("params", json::object());
 
+    std::cerr << "[DEBUG] Received method: " << method << ", id: " << id << std::endl;
+
     if(method == "initialize"){
         handleInitialize(id, params);
     } else if(method == "tools/list"){
         handleListTools(id);
     } else if(method == "tools/call"){
         handleCallTool(id, params);
+    } else if(method.find("notifications/") == 0) {
+        // ✅ 알림(notification)은 응답이 필요 없음
+        std::cerr << "[INFO] Received notification: " << method << std::endl;
+        return;
     } else {
+        std::cerr << "[ERROR] Unknown method: " << method << std::endl;
         sendMessage(createErrorResponse(id, -32601, "Method not found"));
     }
 }
 
 void MCPServer::handleInitialize(const json& id, const json& params) {
-    // 클라이언트가 요청한 protocolVersion 사용
-    std::string protocolVersion = "2024-11-05";  // 기본값
-    if (params.contains("protocolVersion") && params["protocolVersion"].is_string()) {
-        protocolVersion = params["protocolVersion"].get<std::string>();
+    // 클라이언트가 요청한 protocolVersion 가져오기
+    std::string requestedVersion = params.value("protocolVersion", "2024-11-05");
+    
+    // ✅ 지원하는 프로토콜 버전 목록
+    std::vector<std::string> supportedVersions = {
+        "2024-11-05",
+        "2025-06-18"  // 최신 버전 추가
+    };
+    
+    // 버전 호환성 체크
+    bool supported = std::find(supportedVersions.begin(), 
+                               supportedVersions.end(), 
+                               requestedVersion) != supportedVersions.end();
+    
+    if (!supported) {
+        std::cerr << "[ERROR] Unsupported protocol version requested: " 
+                  << requestedVersion << std::endl;
+        sendMessage(createErrorResponse(id, -32602, 
+            "Unsupported protocol version: " + requestedVersion));
+        return;
     }
     
+    std::cerr << "[INFO] Using protocol version: " << requestedVersion << std::endl;
+    
     json result = {
-        {"protocolVersion", protocolVersion},
+        {"protocolVersion", requestedVersion},  // ✅ 클라이언트가 요청한 버전 사용
         {"serverInfo",{
             {"name", serverName_},
             {"version", "1.0.0"}
@@ -149,12 +175,15 @@ json MCPServer::createErrorResponse(const json& id, int code, const std::string&
 
 void MCPServer::sendMessage(const json& message) {
     std::string messageStr = message.dump();
+    
+    size_t byteCount = messageStr.length();
 
-    std::cout << "Content-Length: " << messageStr.size() << "\r\n\r\n";
+    std::cout << "Content-Length: " << byteCount << "\r\n\r\n";
     std::cout << messageStr << std::flush;
     
-    std::cerr << "[SEND] " << messageStr.substr(0, 100) 
-         << (messageStr.size() > 100 ? "..." : "") << std::endl;
+    std::cerr << "[SEND] Content-Length: " << byteCount << " bytes, preview: " 
+              << messageStr.substr(0, 100) 
+              << (messageStr.size() > 100 ? "..." : "") << std::endl;
 }
 
 std::string MCPServer::readMessage() {
@@ -179,6 +208,7 @@ std::string MCPServer::readMessage() {
                     lengthStr = lengthStr.substr(start);
                 }
                 contentLength = stoull(lengthStr);
+                std::cerr << "[DEBUG] Content-Length header: " << contentLength << std::endl;
             }
         }
     }
@@ -192,12 +222,13 @@ std::string MCPServer::readMessage() {
     std::cin.read(&content[0], contentLength);
     
     if (std::cin.gcount() != static_cast<std::streamsize>(contentLength)) {
-        std::cerr << "Failed to read full message body" << std::endl;
+        std::cerr << "[ERROR] Failed to read full message body. Expected: " 
+                  << contentLength << ", Got: " << std::cin.gcount() << std::endl;
         return "";
     }
     
     std::cerr << "[RECV] " << content.substr(0, 100) 
-         << (content.size() > 100 ? "..." : "") << std::endl;
+              << (content.size() > 100 ? "..." : "") << std::endl;
     
     return content;
 }
